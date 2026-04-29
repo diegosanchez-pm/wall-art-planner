@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Wall Art Planner</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="container">
+    <h1>Wall Art Planner</h1>
+
+    <p style="font-size:13px;color:#888;line-height:1.5;margin:4px 0 20px;">
+      Enter your wall and art dimensions, then preview layouts on your wall using your phone's camera. Choose from multiple arrangements, adjust spacing, and get exact nail placement measurements. All art hung gallery style at 60 inches center height.
+    </p>
+
+    <!-- Prep Instructions -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:#f0f0f0;margin-bottom:4px;">Before you start</div>
+      <div style="font-size:11px;color:#888;margin-bottom:16px;">You'll need two things for best results</div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div style="width:32px;height:32px;flex-shrink:0;border-radius:8px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:16px;">📏</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#f0f0f0;">Tape measure</div>
+          <div style="font-size:11px;color:#888;line-height:1.4;">To measure distance from wall and hang tape at the right height</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div style="width:32px;height:32px;flex-shrink:0;border-radius:8px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:16px;">🎨</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#f0f0f0;">Painter's tape</div>
+          <div style="font-size:11px;color:#888;line-height:1.4;">Stick a horizontal strip on the wall at 60" from the floor</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div style="width:32px;height:32px;flex-shrink:0;border-radius:8px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:16px;">📸</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#f0f0f0;">Frame the full tape</div>
+          <div style="font-size:11px;color:#888;line-height:1.4;">Stand back so the entire tape strip is visible in your photo</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;flex-shrink:0;border-radius:8px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:16px;">📐</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#f0f0f0;">Keep tape straight</div>
+          <div style="font-size:11px;color:#888;line-height:1.4;">Make sure the tape is taut and horizontal on the wall</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wall Dimensions -->
+    <p class="section-label">Wall Size</p>
+    <div class="card">
+      <div class="input-row">
+        <div class="input-group">
+          <label>Width (inches) <span style="color:#e55;">*</span></label>
+          <input type="number" inputmode="decimal" id="wall-width" placeholder="120">
+        </div>
+        <div class="input-group">
+          <label>Height (inches) <span style="color:#e55;">*</span></label>
+          <input type="number" inputmode="decimal" id="wall-height" placeholder="96">
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <div class="input-row">
+          <div class="input-group" style="flex:1;">
+            <label>Tape length (inches)</label>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:1px;margin-bottom:4px;">Recommended — used as a guide line overlay</div>
+            <input type="number" inputmode="decimal" id="tape-length" placeholder="36">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Art Mode Toggle -->
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:14px;font-weight:600;" id="mode-label">Demo Mode</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="mode-desc">Using placeholder art</div>
+      </div>
+      <label style="position:relative;width:48px;height:28px;cursor:pointer;">
+        <input type="checkbox" id="art-mode-toggle" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;">
+        <span style="position:absolute;inset:0;background:var(--border);border-radius:14px;transition:background 0.2s;"></span>
+        <span id="toggle-knob" style="position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:50%;transition:transform 0.2s;"></span>
+      </label>
+    </div>
+
+    <!-- Art Pieces -->
+    <p class="section-label">Art Pieces</p>
+    <div id="pieces-container"></div>
+
+    <button class="btn btn-add" id="add-piece-btn">+ Add Another Piece</button>
+  </div>
+
+  <!-- Fixed Bottom Button -->
+  <div class="bottom-bar">
+    <button class="btn btn-primary" id="generate-btn">Preview on Wall</button>
+  </div>
+
+  <script src="js/image-editor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

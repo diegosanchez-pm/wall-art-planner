@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Preview — Wall Art Planner</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+
+    /* Camera feed / frozen frame */
+    #camera-video {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; z-index: 1;
+    }
+    #frozen-frame {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; z-index: 2;
+      display: none;
+    }
+
+    /* Art overlay canvas */
+    #art-canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* ─── Pill Navigation ─── */
+    #pill-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+      padding: 0 12px 12px;
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+      display: none; flex-direction: column; align-items: center; gap: 8px;
+    }
+
+    /* Sub-row for layout choices + spacing slider */
+    #pill-sub {
+      display: none; flex-wrap: wrap; justify-content: center; gap: 6px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      border-radius: 16px;
+      max-width: 420px; width: 100%;
+    }
+
+    /* Scale slider row */
+    #scale-row {
+      display: none; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      border-radius: 16px;
+      max-width: 380px; width: 100%;
+    }
+    #scale-row span { font-size: 16px; color: #666; }
+    #scale-slider { flex: 1; accent-color: #4ade80; height: 36px; }
+
+    /* Spacing slider row */
+    #spacing-row {
+      display: none; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      border-radius: 16px;
+      max-width: 380px; width: 100%;
+    }
+    #spacing-row label { font-size: 12px; color: #aaa; white-space: nowrap; }
+    #spacing-slider { flex: 1; accent-color: #4ade80; height: 36px; }
+    #spacing-val { font-size: 13px; color: #f0f0f0; min-width: 30px; text-align: center; }
+
+    /* Main pill row */
+    #pill-main {
+      display: flex; justify-content: center; gap: 6px;
+      flex-wrap: wrap;
+    }
+    /* Secondary pill row (Back / Finish) */
+    #pill-secondary {
+      display: flex; justify-content: center; gap: 6px;
+    }
+
+    .pill {
+      padding: 10px 16px; border-radius: 22px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+      color: #ccc; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      backdrop-filter: blur(8px);
+      transition: all 0.15s;
+      user-select: none; -webkit-user-select: none;
+    }
+    .pill:active { transform: scale(0.95); }
+    .pill.active {
+      background: rgba(74,222,128,0.25); border-color: #4ade80;
+      color: #4ade80;
+    }
+    .pill.sub-pill {
+      padding: 8px 14px; font-size: 12px;
+    }
+    .pill.sub-pill.active {
+      background: rgba(74,222,128,0.2); border-color: #4ade80;
+      color: #4ade80;
+    }
+    .pill.disabled {
+      opacity: 0.35; pointer-events: none;
+    }
+
+    /* Instructions pill */
+    .instruction-pill {
+      background: rgba(0,0,0,0.65); color: #fff;
+      padding: 10px 20px; border-radius: 24px;
+      font-size: 14px; font-weight: 500;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.4s;
+    }
+
+    /* Capture button */
+    .capture-btn {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: transparent; border: 4px solid #fff;
+      cursor: pointer; position: relative;
+      transition: transform 0.15s;
+    }
+    .capture-btn::after {
+      content: ''; position: absolute;
+      inset: 4px; border-radius: 50%;
+      background: #fff;
+      transition: background 0.2s;
+    }
+    .capture-btn:active { transform: scale(0.92); }
+
+    /* Bottom controls (pre-freeze) */
+    .bottom-controls {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+      padding: 16px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+
+    /* Level indicator */
+    #level-indicator {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 8; pointer-events: none;
+      display: none;
+    }
+    .level-ring {
+      width: 160px; height: 160px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-radius: 50%;
+      position: relative;
+    }
+    .level-crosshair {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 50%;
+    }
+    .level-bubble {
+      position: absolute; top: 50%; left: 50%;
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      transition: transform 0.08s;
+    }
+    .level-bubble.level-ok {
+      background: rgba(74, 222, 128, 0.8);
+    }
+    .level-label {
+      text-align: center; margin-top: 8px;
+      font-size: 14px; color: rgba(255,255,255,0.4);
+      font-weight: 600;
+    }
+
+    /* Distance overlay */
+    #distance-overlay {
+      position: fixed; inset: 0; z-index: 30;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .dist-card {
+      background: #1a1a1a; border-radius: 16px;
+      padding: 32px 28px; max-width: 320px; width: 90%;
+      text-align: center;
+    }
+    .dist-title { font-size: 16px; font-weight: 700; color: #f0f0f0; margin-bottom: 4px; }
+    .dist-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+    .dist-presets { display: flex; gap: 8px; margin-bottom: 16px; }
+    .dist-preset {
+      flex: 1; padding: 14px 0;
+      background: #242424; border: 1px solid #333; border-radius: 10px;
+      color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .dist-preset.recommended {
+      border-color: #4ade80; background: rgba(74,222,128,0.08);
+    }
+    .dist-preset.recommended::after {
+      content: ' ★'; color: #4ade80; font-size: 11px;
+    }
+    .dist-preset:active { background: #333; }
+    .dist-custom { display: flex; gap: 8px; }
+    .dist-custom input {
+      flex: 1; padding: 12px; background: #0f0f0f;
+      border: 1px solid #333; border-radius: 10px;
+      color: #fff; font-size: 16px; text-align: center; outline: none;
+    }
+    .dist-custom button {
+      padding: 12px 20px; background: var(--accent); border: none;
+      border-radius: 10px; color: #000; font-size: 15px; font-weight: 600;
+      cursor: pointer;
+    }
+    .dist-divider {
+      display: flex; align-items: center; gap: 12px; margin: 16px 0;
+    }
+    .dist-divider span { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .dist-divider div { flex: 1; height: 1px; background: #333; }
+
+    /* Confirm dialog */
+    #confirm-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.8);
+      display: none; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    .confirm-card {
+      background: #1a1a1a; border-radius: 16px;
+      padding: 28px 24px; max-width: 300px; width: 85%;
+      text-align: center;
+    }
+    .confirm-card h3 { font-size: 16px; font-weight: 700; color: #f0f0f0; margin-bottom: 8px; }
+    .confirm-card p { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button {
+      flex: 1; padding: 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    }
+    #confirm-cancel { background: #333; color: #fff; }
+    #confirm-yes { background: #e55; color: #fff; }
+
+    /* Nail instructions overlay */
+    #nail-overlay {
+      position: fixed; inset: 0; z-index: 40;
+      background: rgba(0,0,0,0.92);
+      display: none; flex-direction: column;
+      overflow-y: auto;
+      backdrop-filter: blur(12px);
+    }
+    .nail-header {
+      padding: 20px 20px 12px;
+      padding-top: max(52px, env(safe-area-inset-top));
+      text-align: center;
+    }
+    .nail-header h2 { font-size: 20px; font-weight: 700; color: #f0f0f0; }
+    .nail-header p { font-size: 13px; color: #888; margin-top: 4px; }
+    .nail-list { padding: 0 16px 24px; }
+    .nail-card {
+      background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
+      padding: 16px; margin-bottom: 10px;
+    }
+    .nail-card-title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .nail-metric {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid #222;
+    }
+    .nail-metric:last-child { border-bottom: none; }
+    .nail-metric-label { font-size: 13px; color: #888; }
+    .nail-metric-value { font-size: 15px; font-weight: 600; color: #f0f0f0; }
+    .nail-actions {
+      display: flex; gap: 10px;
+      padding: 0 16px 40px;
+      max-width: 480px; margin: 0 auto;
+    }
+    .nail-actions button {
+      flex: 1; padding: 14px; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer; border: none;
+    }
+    #nail-close-btn { background: #333; color: #fff; }
+    #nail-finish-btn { background: #4ade80; color: #000; }
+  </style>
+</head>
+<body>
+
+  <!-- Live camera feed -->
+  <video id="camera-video" autoplay playsinline muted></video>
+
+  <!-- Frozen frame -->
+  <canvas id="frozen-frame"></canvas>
+
+  <!-- Art overlay -->
+  <canvas id="art-canvas"></canvas>
+
+  <!-- Level indicator (aim phase) -->
+  <div id="level-indicator">
+    <div class="level-ring">
+      <div class="level-crosshair"></div>
+      <div class="level-bubble" id="level-bubble"></div>
+    </div>
+    <div class="level-label" id="level-label">Level</div>
+  </div>
+
+  <!-- Bottom controls (pre-freeze: aim + capture) -->
+  <div class="bottom-controls" id="pre-freeze-controls">
+    <div class="instruction-pill" id="instructions">Point at your wall and tap the button</div>
+    <button class="capture-btn" id="capture-btn"></button>
+  </div>
+
+  <!-- Pill navigation (post-freeze) -->
+  <div id="pill-nav">
+    <!-- Sub-row: layout choices -->
+    <div id="pill-sub"></div>
+    <!-- Scale slider -->
+    <div id="scale-row">
+      <span>−</span>
+      <input type="range" id="scale-slider" min="0.2" max="3.0" step="0.02" value="1">
+      <span>+</span>
+    </div>
+    <!-- Scale tooltip -->
+    <div id="scale-tip" style="display:none;font-size:11px;color:rgba(255,255,255,0.45);text-align:center;padding:2px 0;">Drag to align guide with your tape</div>
+    <!-- Spacing slider -->
+    <div id="spacing-row">
+      <label>Spacing</label>
+      <input type="range" id="spacing-slider" min="0" max="12" step="0.5" value="3">
+      <span id="spacing-val">3"</span>
+    </div>
+    <!-- Main pills (top row) -->
+    <div id="pill-main"></div>
+    <!-- Secondary pills (bottom row) -->
+    <div id="pill-secondary"></div>
+  </div>
+
+  <!-- Back confirmation dialog -->
+  <div id="confirm-overlay">
+    <div class="confirm-card">
+      <h3>Go back?</h3>
+      <p>You'll lose your current positioning.</p>
+      <div class="confirm-btns">
+        <button id="confirm-cancel">Cancel</button>
+        <button id="confirm-yes">Go Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nail placement instructions -->
+  <div id="nail-overlay">
+    <div class="nail-header">
+      <h2>Hanging Instructions</h2>
+      <p>Measurements from your tape at 60" height</p>
+    </div>
+    <div class="nail-list" id="nail-list"></div>
+    <div class="nail-actions">
+      <button id="nail-close-btn">Back</button>
+      <button id="nail-finish-btn">Finish</button>
+    </div>
+  </div>
+
+  <!-- Distance overlay -->
+  <div id="distance-overlay">
+    <div class="dist-card">
+      <a href="index.html" style="display:inline-block;margin-bottom:12px;color:#888;font-size:13px;text-decoration:none;font-weight:600;">&larr; Back</a>
+      <div class="dist-title">How far from the wall?</div>
+      <div class="dist-sub">Stand back so the full wall section is visible</div>
+
+      <div class="dist-presets">
+        <button class="dist-preset" data-dist="3">3 ft</button>
+        <button class="dist-preset" data-dist="5">5 ft</button>
+        <button class="dist-preset recommended" data-dist="7">7 ft</button>
+        <button class="dist-preset" data-dist="10">10 ft</button>
+      </div>
+
+      <div class="dist-divider">
+        <div></div><span>or custom</span><div></div>
+      </div>
+
+      <div class="dist-custom">
+        <input type="number" id="custom-dist" inputmode="decimal" placeholder="feet">
+        <button id="custom-go">Go</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/layout-engine.js"></script>
+  <script src="js/freeze-preview.js"></script>
+</body>
+</html>
