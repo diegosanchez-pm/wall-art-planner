@@ -5,8 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Wall Art Planner</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .desktop-only { display: none; }
+    @media (hover: hover) and (pointer: fine) {
+      body { background: #0a0a0a; }
+      .container, .bottom-bar { display: none !important; }
+      .desktop-only {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem;
+        text-align: center;
+        gap: 1.5rem;
+        background: #0a0a0a;
+        color: #f0f0f0;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+    }
+    .desktop-only h1 { font-size: 28px; font-weight: 500; max-width: 28ch; line-height: 1.3; margin: 0; letter-spacing: -0.01em; }
+    .desktop-only p { font-size: 16px; color: #aaa; max-width: 38ch; margin: 0; line-height: 1.5; }
+    .desktop-only .qr-wrap { background: #fff; padding: 16px; border-radius: 8px; }
+    .desktop-only img { display: block; width: 200px; height: 200px; }
+    .desktop-only .url { font-family: ui-monospace, "SF Mono", monospace; font-size: 13px; color: #777; letter-spacing: 0.5px; }
+  </style>
 </head>
 <body>
+
+  <div class="desktop-only">
+    <h1>Built for the moment you're standing at the wall.</h1>
+    <p>The point is the camera looking at where the art goes. Open this on your phone.</p>
+    <div class="qr-wrap">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Fwallart.diegosanchez.solutions%2F" alt="Scan to open Wall Art Planner on your phone" width="200" height="200" />
+    </div>
+    <span class="url">wallart.diegosanchez.solutions</span>
+  </div>
 
   <div class="container">
     <h1>Wall Art Planner</h1>
@@ -70,7 +104,7 @@
         <div class="input-row">
           <div class="input-group" style="flex:1;">
             <label>Tape length (inches)</label>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:1px;margin-bottom:4px;">Recommended — used as a guide line overlay</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:1px;margin-bottom:4px;">Recommended. Used as a guide line overlay.</div>
             <input type="number" inputmode="decimal" id="tape-length" placeholder="36">
           </div>
         </div>
